@@ -31,7 +31,6 @@ int Video::WithClahe(VideoCapture cap)
     Mat clahe1;
     clahe->apply(gray1, clahe1);
 
-    // Детекторы и экстракторы
     Ptr<Feature2D> detector = BRISK::create();
     Ptr<Feature2D> extractor = BRISK::create();
     //         Ptr<Feature2D> detector = SIFT::create();
@@ -57,21 +56,17 @@ int Video::WithClahe(VideoCapture cap)
     vector<uchar> status;
     vector<float> err;
 
-    // Переменная для накопления траектории
     Point2f trajectory = Point2f(0, 0);
-
 
     int trajectory_width = frame1.cols*2; // Ширина траектории
     int trajectory_height = frame1.rows * 3; // Высота траектории
     Mat img_trajectory = Mat::zeros(Size(trajectory_width, trajectory_height), CV_8UC3); // траектория
     img_trajectory = Scalar(255, 255, 255); // Белый фон
 
-    // Начальная позиция в центре большого изображения траектории
     Point2f start_position(trajectory_width / 2, 0); // Начальная позиция в центре верхнего края
     Point2f previous_position = start_position;
 
-    // Переменные для хранения границ траектории
-    int min_x = trajectory_width, min_y = trajectory_height, max_x = 0, max_y = 0;
+    int min_x = trajectory_width, min_y = trajectory_height, max_x = 0, max_y = 0; //границы
 
     while (!stop) {
         // Считываем следующий кадр
@@ -80,8 +75,7 @@ int Video::WithClahe(VideoCapture cap)
             cerr << "Error: Could not read frame." << endl;
             break;
         }
-
-        // Конвертируем кадр в оттенки серого
+		
         Mat gray2;
         cvtColor(frame2, gray2, COLOR_BGR2GRAY);
 
@@ -105,15 +99,13 @@ int Video::WithClahe(VideoCapture cap)
             delta *= (1.0 / count);
         }
 
-        // Обновление траектории
-        trajectory += delta;
+        trajectory += delta;  // Обновление
 
         // Вычисление текущей позиции на изображении траектории
         Point2f current_position = previous_position + delta;
-        line(img_trajectory, previous_position, current_position, Scalar(0, 45, 120), 2);
+        line(img_trajectory, previous_position, current_position, Scalar(0, 45, 120), 2); //цвет траектории
         previous_position = current_position;
 
-        // Обновление границ траектории
         min_x = min(min_x, (int)current_position.x);
         min_y = min(min_y, (int)current_position.y);
         max_x = max(max_x, (int)current_position.x);
@@ -132,11 +124,9 @@ int Video::WithClahe(VideoCapture cap)
             stop = true;
     }
 
-    // Обрезка изображения по границам траектории
     Rect bounding_rect(min_x, min_y, max_x - min_x, max_y - min_y);
     Mat cropped_img_trajectory = img_trajectory(bounding_rect);
 
-    // Сохранение обрезанного изображения траектории в файл .jpeg
     imwrite("trajectory_clahe.jpg", cropped_img_trajectory);
 
     cap.release();
@@ -156,16 +146,9 @@ void Video::WithOutClahe(VideoCapture cap)
 
     cap >> frame1;// Считываем первый кадр
 
-    // Конвертируем кадр в оттенки серого
     Mat gray1;
     cvtColor(frame1, gray1, CV_BGR2GRAY);
-    //    //адаптивноt выравнивание яркости
-    //    Ptr<CLAHE> clahe = createCLAHE();
-    //    clahe->setClipLimit(4); //Clip Limit — это максимальное значение для гистограммы каждого небольшого блока. Ограничение клиппинга предотвращает усиление шума. В данном случае значение установлено на 4, что является эмпирически подобранным значением для предотвращения переусиления контраст
-    //    Mat clahe1;
-    //    clahe->apply(gray1, clahe1);
 
-    // Детекторы и экстракторы
     Ptr<Feature2D> detector = BRISK::create();
     Ptr<Feature2D> extractor = BRISK::create();
     //         Ptr<Feature2D> detector = SIFT::create();
@@ -176,35 +159,29 @@ void Video::WithOutClahe(VideoCapture cap)
     vector<KeyPoint> keypoints1;
     Mat descriptors1;
 
-    // Нахождение ключевых точек и построение описаний
-    detector->detect(gray1, keypoints1);
+    detector->detect(gray1, keypoints1);// Нахождение ключевых точек
     extractor->compute(gray1, keypoints1, descriptors1);
 
-    // Координаты ключевых точек для отслеживания
-    vector<Point2f> points1;
+    
+    vector<Point2f> points1; // Координаты ключевых точек для отслеживания
     for (const auto& kp : keypoints1) {
         points1.push_back(kp.pt);
     }
 
-    // Параметры для функции оптического потока
-    vector<Point2f> points2;
+    vector<Point2f> points2; // Параметры для функции оптического потока
     vector<uchar> status;
     vector<float> err;
 
-    // Переменная для накопления траектории
     Point2f trajectory = Point2f(0, 0);
 
-    // Изображение для отображения траектории
     int trajectory_width = frame1.cols; // Ширина изображения для траектории
     int trajectory_height = frame1.rows * 3; // Высота изображения для траектории
     Mat img_trajectory = Mat::zeros(Size(trajectory_width, trajectory_height), CV_8UC3);
     img_trajectory = Scalar(255, 255, 255); // Белый фон
 
-    // Начальная позиция в центре большого изображения траектории
     Point2f start_position(trajectory_width / 2, 0); // Начальная позиция в центре верхнего края
     Point2f previous_position = start_position;
 
-    // Переменные для хранения границ траектории
     int min_x = trajectory_width, min_y = trajectory_height, max_x = 0, max_y = 0;
 
     while (!stop) {
@@ -219,14 +196,10 @@ void Video::WithOutClahe(VideoCapture cap)
         Mat gray2;
         cvtColor(frame2, gray2, COLOR_BGR2GRAY);
 
-        //
-        //        Mat clahe2;
-        //        clahe->apply(gray2, clahe2); // Применение CLAHE для адаптивного выравнивания яркости
-
         calcOpticalFlowPyrLK(gray1, gray2, points1, points2, status, err);
 
-        // Вычисление средней разницы координат
-        Point2f delta(0, 0);
+        
+        Point2f delta(0, 0); // Вычисление средней разницы координат
         int count = 0;
         for (size_t i = 0; i < points1.size(); i++) {
             if (status[i]) {
@@ -239,12 +212,11 @@ void Video::WithOutClahe(VideoCapture cap)
             delta *= (1.0 / count);
         }
 
-        // Обновление траектории
         trajectory += delta;
 
         // Вычисление текущей позиции на изображении траектории
         Point2f current_position = previous_position + delta;
-        line(img_trajectory, previous_position, current_position, Scalar(0, 200, 15), 2); // Красная линия
+        line(img_trajectory, previous_position, current_position, Scalar(0, 200, 15), 2); 
         previous_position = current_position;
 
 
